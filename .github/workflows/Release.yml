@@ -30,7 +30,7 @@ jobs:
         artifactContentType: application/x-apple-diskimage
         draft: true
         tag: ci
-        token: ${{ secrets.TTL_RELEASE_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
   'Linux':
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
         artifactContentType: application/vnd.debian.binary-package
         draft: true
         tag: ci
-        token: ${{ secrets.TTL_RELEASE_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
     - name: 'Packing RPM'
       if: success()
       run: |
@@ -68,7 +68,7 @@ jobs:
         artifactContentType: application/x-redhat-package-manager
         draft: true
         tag: ci
-        token: ${{ secrets.TTL_RELEASE_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
   'Windows':
       runs-on: windows-latest
@@ -91,7 +91,7 @@ jobs:
           artifactContentType: application/x-msi
           draft: true
           tag: ci
-          token: ${{ secrets.TTL_RELEASE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: 'Release EXE to GH'
         if: success()
         uses: ncipollo/release-action@v1
@@ -101,4 +101,4 @@ jobs:
           artifactContentType: application/x-executable
           draft: true
           tag: ci
-          token: ${{ secrets.TTL_RELEASE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
