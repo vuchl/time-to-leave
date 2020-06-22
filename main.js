@@ -1,12 +1,12 @@
 /*eslint-disable no-useless-escape*/
-const { app, BrowserWindow, dialog, ipcMain, Menu, net, shell, Tray } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, net, shell, Tray } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
 const isOnline = require('is-online');
 const { importDatabaseFromFile, exportDatabaseToFile } = require('./js/import-export.js');
 const { notify } = require('./js/notification');
 const { getDateStr } = require('./js/date-aux.js');
-const { getUserPreferences, savePreferences } = require('./js/user-preferences.js');
+const { getDefaultWidthHeight, getUserPreferences, savePreferences } = require('./js/user-preferences.js');
 const os = require('os');
 
 let savedPreferences = null;
@@ -18,15 +18,14 @@ ipcMain.on('PREFERENCE_SAVE_DATA_NEEDED', (event, preferences) => {
 });
 
 ipcMain.on('SET_WAIVER_DAY', (event, waiverDay) => {
-    if (!isNan(waiverDay))
-    {
-        global.waiverDay = waiverDay;  
-    }
+    global.waiverDay = waiverDay;
 });
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
+let waiverWindow = null;
+let prefWindow = null;
 let tray;
 const store = new Store();
 const waivedWorkdays = new Store({name: 'waived-workdays'});
@@ -39,6 +38,14 @@ var launchDate = new Date();
 // Logic for recommending user to punch in when they've been idle for too long
 var recommendPunchIn = false;
 setTimeout(() => { recommendPunchIn = true; }, 30 * 60 * 1000);
+
+process.on('uncaughtException', function(err) {
+    if (!err.message.includes('net::ERR_NETWORK_CHANGED')) {
+        console.error((new Date).toUTCString() + ' uncaughtException:', err.message);
+        console.error(err.stack);
+        process.exit(1);
+    }
+});
 
 function checkIdleAndNotify() {
     if (recommendPunchIn) {
@@ -64,7 +71,7 @@ async function checkForUpdates(showUpToDateDialog) {
     request.on('response', (response) => {
         response.on('data', (chunk) => {
             var result = `${chunk}`;
-            var re = new RegExp('.*(tag_name).*');
+            var re = new RegExp('.*(tag_name).*', 'g');
             var matches = result.matchAll(re);
             for (const match of matches) {
                 var res = match[0].replace(/.*v.(\d+\.\d+\.\d+).*/g, '$1');
@@ -106,9 +113,12 @@ function refreshOnDayChange() {
     var today = new Date();
     if (today > launchDate)
     {
+        let oldDate = launchDate.getDate();
+        let oldMonth = launchDate.getMonth();
+        let oldYear = launchDate.getFullYear();
         launchDate = today;
         // Reload only the calendar itself to avoid a flash
-        win.webContents.executeJavaScript('calendar.redraw()');
+        win.webContents.executeJavaScript(`calendar.refreshOnDayChange(${oldDate},${oldMonth},${oldYear})`);
     }
 }
 
@@ -122,17 +132,23 @@ function createWindow() {
                     label: 'Workday Waiver Manager',
                     id: 'workday-waiver-manager',
                     click(item, window, event) {
+                        if (waiverWindow !== null) {
+                            waiverWindow.show();
+                            return;
+                        }
+                        
                         if (event) {
                             const today = new Date();
                             global.waiverDay = getDateStr(today);
                         }
                         const htmlPath = path.join('file://', __dirname, 'src/workday-waiver.html');
-                        let waiverWindow = new BrowserWindow({ width: 600,
+                        waiverWindow = new BrowserWindow({ width: 600,
                             height: 500,
                             parent: win,
                             resizable: true,
                             icon: iconpath,
                             webPreferences: {
+                                enableRemoteModule: true,
                                 nodeIntegration: true
                             } });
                         waiverWindow.setMenu(null);
@@ -140,8 +156,7 @@ function createWindow() {
                         waiverWindow.show();
                         waiverWindow.on('close', function() {
                             waiverWindow = null;
-                            // Reload only the calendar itself to avoid a flash
-                            win.webContents.executeJavaScript('calendar.redraw()');
+                            win.webContents.send('WAIVER_SAVED');
                         });
                     },
                 },
@@ -183,13 +198,19 @@ function createWindow() {
                     label: 'Preferences',
                     accelerator: macOS ? 'Command+,' : 'Control+,',
                     click() {
+                        if (prefWindow !== null) {
+                            prefWindow.show();
+                            return;
+                        }
+                      
                         const htmlPath = path.join('file://', __dirname, 'src/preferences.html');
-                        let prefWindow = new BrowserWindow({ width: 400,
-                            height: 448,
+                        prefWindow = new BrowserWindow({ width: 400,
+                            height: 500,
                             parent: win,
                             resizable: true,
                             icon: iconpath,
                             webPreferences: {
+                                enableRemoteModule: true,
                                 nodeIntegration: true
                             } });
                         prefWindow.setMenu(null);
@@ -198,8 +219,10 @@ function createWindow() {
                         //prefWindow.webContents.openDevTools()
                         prefWindow.on('close', function() {
                             prefWindow = null;
-                            savePreferences(savedPreferences);
-                            win.webContents.send('PREFERENCE_SAVED', savedPreferences);
+                            if (savedPreferences !== null) {
+                                savePreferences(savedPreferences);
+                                win.webContents.send('PREFERENCE_SAVED', savedPreferences);
+                            }
                         });
                     },
                 },
@@ -258,7 +281,7 @@ function createWindow() {
                                 const importResult = importDatabaseFromFile(response);
                                 if (importResult['result']) {
                                     // Reload only the calendar itself to avoid a flash
-                                    win.webContents.executeJavaScript('calendar.redraw()');
+                                    win.webContents.executeJavaScript('calendar.reload()');
                                     dialog.showMessageBox(BrowserWindow.getFocusedWindow(),
                                         {
                                             title: 'Time to Leave',
@@ -303,7 +326,7 @@ function createWindow() {
                             store.clear();
                             waivedWorkdays.clear();
                             // Reload only the calendar itself to avoid a flash
-                            win.webContents.executeJavaScript('calendar.redraw()');
+                            win.webContents.executeJavaScript('calendar.reload()');
                             dialog.showMessageBox(BrowserWindow.getFocusedWindow(),
                                 {
                                     title: 'Time to Leave',
@@ -375,18 +398,29 @@ function createWindow() {
                                 message: 'Time to Leave',
                                 type: 'info',
                                 icon: iconpath,
-                                detail: `\n${detail}`
-                            });
+                                detail: `\n${detail}`,
+                                buttons: ['Copy', 'OK'],
+                                noLink: true
+                            }
+                        ).then((result) => {
+                            const buttonId = result.response;
+                            if (buttonId === 0) {
+                                clipboard.writeText(detail);
+                            }
+                        });
                     }
                 }
             ]
         }
     ]);
 
+    let widthHeight = getDefaultWidthHeight();
+
     win = new BrowserWindow({
-        width: 1000,
-        height: 1000,
-        useContentSize: true,
+        width: widthHeight.width,
+        height: widthHeight.height,
+        minWidth: 450,
+        useContentSize: false,
         zoomToPageWidth: true, //MacOS only
         icon: iconpath,
         show: false,
@@ -403,7 +437,7 @@ function createWindow() {
             label: 'Punch time', click: function() {
                 var now = new Date();
 
-                win.webContents.executeJavaScript('punchDate()');
+                win.webContents.executeJavaScript('calendar.punchDate()');
                 // Slice keeps "HH:MM" part of "HH:MM:SS GMT+HHMM (GMT+HH:MM)" time string
                 notify(`Punched time ${now.toTimeString().slice(0,5)}`);
             }
@@ -429,7 +463,7 @@ function createWindow() {
             label: 'Punch time', click: function() {
                 var now = new Date();
 
-                win.webContents.executeJavaScript('punchDate()');
+                win.webContents.executeJavaScript('calendar.punchDate()');
                 // Slice keeps "HH:MM" part of "HH:MM:SS GMT+HHMM (GMT+HH:MM)" time string
                 notify(`Punched time ${now.toTimeString().slice(0,5)}`);
             }
@@ -449,6 +483,14 @@ function createWindow() {
     ipcMain.on('TOGGLE_TRAY_PUNCH_TIME', function(_event, arg) {
         contextMenuTemplate[0].enabled = arg;
         contextMenu = Menu.buildFromTemplate(contextMenuTemplate);
+    });
+
+    ipcMain.on('RESIZE_MAIN_WINDOW', (event, width, height) => {
+        win.setSize(width, height);
+    });
+
+    ipcMain.on('VIEW_CHANGED', (event, savedPreferences) => {
+        win.webContents.send('PREFERENCE_SAVED', savedPreferences);
     });
 
     tray.on('click', function handleCliked() {

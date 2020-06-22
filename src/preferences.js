@@ -1,9 +1,11 @@
 const { ipcRenderer } = require('electron');
+
 const { getUserPreferences } = require('../js/user-preferences.js');
 const { applyTheme } = require('../js/themes.js');
+const { bindDevToolsShortcut } = require('../js/window-aux.js');
 
 // Global values for preferences page
-let usersStyles =  getUserPreferences();
+let usersStyles = getUserPreferences();
 let preferences = usersStyles;
 
 $(() => {
@@ -14,16 +16,25 @@ $(() => {
     }
     let selectedThemeOption = $('#' + theme).children('option:selected').val();
     preferences[theme] = selectedThemeOption;
-    document.querySelector('html').setAttribute('data-theme', selectedThemeOption);
+    $('html').attr('data-theme', selectedThemeOption);
 
-    let inputs = document.getElementsByTagName('input');
+    if ('view' in usersStyles) {
+        $('#view').val(usersStyles['view']);
+    }
 
     $('input[type="checkbox"]').change(function() {
         preferences[this.name] = this.checked;
         ipcRenderer.send('PREFERENCE_SAVE_DATA_NEEDED', preferences);
     });
 
-    $('input[type="time"]').change(function() {
+    $('#hours-per-day').change(function() {
+        if (this.checkValidity() === true) {
+            preferences[this.name] = this.value;
+            ipcRenderer.send('PREFERENCE_SAVE_DATA_NEEDED', preferences);
+        }
+    });
+
+    $('input[type="number"]').change(function() {
         preferences[this.name] = this.value;
         ipcRenderer.send('PREFERENCE_SAVE_DATA_NEEDED', preferences);
     });
@@ -34,25 +45,30 @@ $(() => {
         applyTheme(this.value);
     });
 
+    $('#view').change(function() {
+        preferences['view'] = this.value;
+        ipcRenderer.send('PREFERENCE_SAVE_DATA_NEEDED', preferences);
+    });
 
-    for (let i = 0; i < inputs.length; i++) {
-        let input = inputs[i];
-        if (inputs[i].type === 'checkbox') {
-            if (input.name in usersStyles) {
-                input.checked = usersStyles[input.name];
+    $('input').each(function() {
+        let input = $(this);
+        let name = input.attr('name');
+        if (input.attr('type') === 'checkbox') {
+            if (name in usersStyles) {
+                input.prop('checked', usersStyles[name]);
             }
-            preferences[input.name] = input.checked;
-        } else if (inputs[i].type === 'time') {
-            if (input.name in usersStyles) {
-                input.value = usersStyles[input.name];
+            preferences[name] = input.prop('checked');
+        } else if (['text', 'number'].indexOf(input.attr('type')) > -1) {
+            if (name in usersStyles) {
+                input.val(usersStyles[name]);
             }
-            preferences[input.name] = input.value;
+            preferences[name] = input.val();
         }
-    }
+    });
 
-    const notification = $(document.getElementById('notification'));
-    const repetition = $(document.getElementById('repetition'));
-    const notificationsInterval = $(document.getElementById('notifications-interval'));
+    const notification = $('#notification');
+    const repetition = $('#repetition');
+    const notificationsInterval = $('#notifications-interval');
 
     repetition.prop('disabled', !notification.is(':checked'));
     repetition.prop('checked', notification.is(':checked') && usersStyles['repetition']);
@@ -67,4 +83,6 @@ $(() => {
     repetition.change(function() {
         notificationsInterval.prop('disabled', !repetition.is(':checked'));
     });
+
+    bindDevToolsShortcut(window);
 });

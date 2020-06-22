@@ -1,72 +1,75 @@
+<!DOCTYPE html>
 <html data-theme="">
-<header>
+
+<head>
     <title>Time to Leave - Workday Waiver Manager</title>
     <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../css/themes.css">
-    <link rel="stylesheet" href="workday-waiver.css">
+    <link rel="stylesheet" href="../css/styles.css">
 
-<!-- First we need to declare jQuery and $ globals with jquery -->
-<script>window.$ = window.jQuery = require('jquery');</script>
-  <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.js" charset="utf-8"></script>
+    <!-- First we need to declare jQuery and $ globals with jquery -->
+    <script>window.$ = window.jQuery = require('jquery');</script>
+    <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.js" charset="utf-8"></script>
     <script src="workday-waiver.js"></script>
-</header>
-<body>
+</head>
+
+<body id="workday-waiver-window" class="common-window">
     <div class="container">
-        <div class="container-page">
+        <div class="header-title">
             Workday Waiver Manager
             <p class="header-help">Changes take effect when closing this window</p>
         </div>
 
-        <div class="container-title">Add Waiver</div>
-        <div class="add-waiver">
+        <section>
+            <div class="section-title">Add Waiver</div>
             <form>
-                <table class="data">
+                <table>
                     <tbody>
-                    <tr>
-                        <td></td>
-                        <th>Start date</th>
-                        <td></td>
-                        <th>End date</th>
-                    </tr>
-                    <tr>
-                        <th>From</th>
-                        <td><input id="start_date" type="date"></td>
-                        <th>to</th>
-                        <td><input id="end_date" type="date"></td>
-                    </tr>
-                    <tr>
-                        <th>Hours</th>
-                        <td>
-                            <input type="text" id="hours" maxlength=8 pattern="^\d+:\d+$" placeholder="HH:mm" size=8>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Reason</th>
-                        <td colspan="3"><input id="reason" type="text" maxlength="30" size="60" placeholder="Reason for the waiver"></td>
-                    </tr>
+                        <tr>
+                            <td></td>
+                            <th>Start date</th>
+                            <td></td>
+                            <th>End date</th>
+                        </tr>
+                        <tr>
+                            <th>From</th>
+                            <td><input id="start-date" type="date"></td>
+                            <th>to</th>
+                            <td><input id="end-date" type="date"></td>
+                        </tr>
+                        <tr>
+                            <th>Hours</th>
+                            <td>
+                                <input type="text" id="hours" maxlength=8 pattern="^\d+:\d+$" placeholder="HH:mm" size=8>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Reason</th>
+                            <td colspan="3"><input id="reason" type="text" maxlength="30" size="60" placeholder="Reason for the waiver"></td>
+                        </tr>
                     </tbody>
                 </table>
                 <br>
-                <button class="waive-button" id="waive-button">
+                <button class="waive-button" id="waive-button" type="button">
                     Waive
                 </button>
             </form>
-        </div>
+        </section>
 
-        <div class="container-title">Waived workday list</div>
-        <div class="list-waiver">
-            <table class="waiver-list-table data" id="waiver-list-table">
-                <tbody>
+        <section>
+            <div class="section-title">Waived workday list</div>
+            <table id="waiver-list-table">
                 <thead>
-                    <td class="table-header">Day</td>
-                    <td class="table-header">Waiver Reason</td>
-                    <td class="table-header">Hours waived</td>
-                    <td class="table-header">Delete</td>
+                    <tr>
+                        <th>Day</th>
+                        <th>Waiver Reason</th>
+                        <th>Hours Waived</th>
+                        <th>Delete</th>
+                    </tr>
                 </thead>
-                </tbody>
+                <tbody></tbody>
             </table>
-        </div>
-        <br>
+        </section>
     </div>
 </body>
+
 </html>

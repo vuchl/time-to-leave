@@ -11,7 +11,7 @@ const defaultPreferences = {
     'hours-per-day': '08:00',
     'notification': true,
     'repetition': true,
-    'notifications-interval': '00:05',
+    'notifications-interval': '5',
     'start-at-login': false,
     'theme': 'light',
     'update-remind-me-after' : '2019-01-01',
@@ -22,6 +22,7 @@ const defaultPreferences = {
     'working-days-friday': true,
     'working-days-saturday': false,
     'working-days-sunday': false,
+    'view': 'month'
 };
 
 /*
@@ -61,10 +62,10 @@ function readPreferences() {
 function getDerivedPrefsFromLoadedPrefs(loadedPreferences) {
     var derivedPreferences = {};
     Object.keys(defaultPreferences).forEach(function(key) {
-        derivedPreferences[key] = loadedPreferences[key] || defaultPreferences[key];
+        derivedPreferences[key] = (typeof loadedPreferences[key] !== 'undefined') ? loadedPreferences[key] : defaultPreferences[key];
     });
 
-    return defaultPreferences;
+    return derivedPreferences;
 }
 
 /*
@@ -94,6 +95,11 @@ function initPreferencesFileIfNotExistsOrInvalid() {
         switch (key) {
         // Handle Time Inputs
         case 'notifications-interval':
+            if (isNaN(Number(value)) || value < 1 || value > 30) {
+                derivedPrefs[key] = defaultPreferences[key];
+                shouldSaveDerivedPrefs = true;
+            }
+            break;
         case 'hours-per-day': {
             if (!validateTime(value)) {
                 derivedPrefs[key] = defaultPreferences[key];
@@ -122,9 +128,12 @@ function initPreferencesFileIfNotExistsOrInvalid() {
             break;
         }
         // Handle Enum Inputs
-        case 'theme' : {
+        case 'theme':
             shouldSaveDerivedPrefs |= !isValidTheme(value);
-        }
+            break;
+        case 'view':
+            shouldSaveDerivedPrefs |= !(value === 'month' || value === 'day');
+            break;
         }
     }
 
@@ -145,8 +154,10 @@ function getLoadedOrDerivedUserPreferences() {
 /*
  * Returns true if we should display week day.
  */
-function showWeekDay(weekDay) {
-    var preferences = getLoadedOrDerivedUserPreferences();
+function showWeekDay(weekDay, preferences = undefined) {
+    if (preferences === undefined) {
+        preferences = getLoadedOrDerivedUserPreferences();
+    }
     switch (weekDay) {
     case 0: return preferences['working-days-sunday'];
     case 1: return preferences['working-days-monday'];
@@ -162,14 +173,39 @@ function showWeekDay(weekDay) {
  * Returns true if we should display day.
  * @note: The month should be 0-based (i.e.: 0 is Jan, 11 is Dec).
  */
-function showDay(year, month, day)  {
+function showDay(year, month, day, preferences = undefined)  {
     var currentDay = new Date(year, month, day), weekDay = currentDay.getDay();
-    return showWeekDay(weekDay);
+    return showWeekDay(weekDay, preferences);
+}
+
+function switchCalendarView() {
+    let preferences = getLoadedOrDerivedUserPreferences();
+    if (preferences['view'] === 'month') {
+        preferences['view'] = 'day';
+    }
+    else {
+        preferences['view'] = 'month';
+    }
+    savePreferences(preferences);
+
+    return preferences;
+}
+
+function getDefaultWidthHeight() {
+    let preferences = getLoadedOrDerivedUserPreferences();
+    if (preferences['view'] === 'month') {
+        return { width: 1010, height: 800 };
+    }
+    else {
+        return { width: 500, height: 500 };
+    }
 }
 
 module.exports = {
     defaultPreferences,
+    getDefaultWidthHeight,
     getUserPreferences: getLoadedOrDerivedUserPreferences,
     savePreferences,
-    showDay
+    showDay,
+    switchCalendarView
 };
