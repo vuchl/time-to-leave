@@ -11,7 +11,8 @@
         "id": "Bahasa Indonesia",
         "pl": "Polski",
         "nl": "Nederlands",
-        "th-TH": "ไทย"
+        "th-TH": "ไทย",
+        "dev": "Português - Minerês"
     },
     "$Preferences": {
         "title": "Time to Leave - Preferences",
