@@ -4,6 +4,14 @@
         "pt-BR": "Português - Brasil",
         "es": "Español",
         "it": "Italiano",
+        "zh-TW": "繁體中文",
+        "de-DE": "Deutsch",
+        "hi": "हिंदी",
+        "mr": "मराठी",
+        "id": "Bahasa Indonesia",
+        "pl": "Polski",
+        "nl": "Nederlands",
+        "th-TH": "ไทย",
         "dev": "Português - Minerês"
     },
     "$Preferences": {
@@ -39,7 +47,8 @@
         "numberOfEntries": "Número de entradas",
         "fixed": "Fixo",
         "flexible": "Flexível",
-        "language": "Idioma"
+        "language": "Idioma",
+        "hours-per-day": "HH:mm"
     },
     "$Menu": {
         "about": "Sobre",
@@ -170,6 +179,14 @@
     "$Notification": {
         "time-to-leave": "Oia só! Vaipácasa.",
         "punch-reminder": "Num isquece de bater ponto!"
+    },
+    "$UpdateManager": {
+        "dismissBtn": "Xá pra lá",
+        "downloadBtn": "Baixa ai",
+        "remindBtn": "Xá prouto dia",
+        "title": "TTL Vê cê tem atualização",
+        "upto-date-msg": "Seu TTL tá atualizado.",
+        "old-version-msg": "Cê tá usando uma versão antiga do TTL e perdendo muita coisa boa!"
     },
     "$FixedDayCalendar": {
         "leave-by": "Cê deve sair às:",
